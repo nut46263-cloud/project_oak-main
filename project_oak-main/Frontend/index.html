@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบยืม-คืนอุปกรณ์ | Borrow System</title>
+  <!-- SweetAlert2 CSS & JS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- Google Fonts & Font Awesome Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="store.css">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      
+      <!-- Brand Logo -->
+      <a href="#" class="logo-box">
+        <div class="logo-icon">
+          <i class="fa-solid fa-boxes-packing"></i>
+        </div>
+        <div class="logo-text">
+          <span class="brand-title">Borrow System</span>
+          <span class="brand-subtitle">ระบบยืม-คืนอุปกรณ์</span>
+        </div>
+      </a>
+
+      <!-- Navigation Links -->
+      <ul class="nav-links">
+        <li><button id="catalog-nav-btn" class="nav-link active"><i class="fa-solid fa-list"></i> รายการอุปกรณ์</button></li>
+        <li><button id="my-requests-btn" class="nav-link"><i class="fa-solid fa-clock-rotate-left"></i> คำขอยืมของฉัน</button></li>
+      </ul>
+
+      <!-- Controls Right: Search, Filters, Login & Cart Button -->
+      <div class="nav-controls">
+        <div class="nav-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="search-input" placeholder="ค้นหาอุปกรณ์...">
+        </div>
+
+        <select id="category-filter" class="nav-select">
+          <option value="all">ทุกหมวดหมู่</option>
+          <option value="durable">ครุภัณฑ์</option>
+          <option value="consumable">วัสดุสิ้นเปลือง</option>
+        </select>
+
+        <select id="status-filter" class="nav-select">
+          <option value="all">สถานะทั้งหมด</option>
+          <option value="available">พร้อมยืม</option>
+          <option value="unavailable">ถูกยืมหมด</option>
+        </select>
+
+        <!-- Login Button / Profile Status -->
+        <button id="open-auth-btn" class="nav-login-btn">
+          <i class="fa-solid fa-user"></i>
+          <span>เข้าสู่ระบบ</span>
+        </button>
+
+        <div id="user-profile-badge" class="user-profile-badge is-hidden">
+          <i class="fa-solid fa-circle-user"></i>
+          <span id="user-name-display">ผู้ใช้งาน</span>
+          <button id="logout-btn" class="logout-btn" title="ออกจากระบบ"><i class="fa-solid fa-right-from-bracket"></i></button>
+        </div>
+
+        <!-- Cart Button -->
+        <button id="cart-btn" class="nav-cart-btn" aria-label="ตะกร้ายืม">
+          <i class="fa-solid fa-basket-shopping"></i>
+          <span>ตะกร้ายืม</span>
+          <span id="cart-badge" class="cart-badge">0</span>
+        </button>
+        <a class="admin-shortcut" href="admin.html" title="ไปยังระบบจัดการ"><i class="fa-solid fa-sliders"></i></a>
+      </div>
+
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-container">
+    <section class="hero-header">
+      <div class="hero-copy">
+        <span class="eyebrow"><i class="fa-solid fa-circle-check"></i> INVENTORY · BORROW · RETURN</span>
+        <h1>อุปกรณ์พร้อมใช้<br><span>สำหรับโปรเจกต์ถัดไป</span></h1>
+        <p>ค้นหา เช็กจำนวนคงเหลือ และส่งคำขอยืมได้ในที่เดียว</p>
+      </div>
+      <div class="hero-mark" aria-hidden="true"><i class="fa-solid fa-boxes-stacked"></i><span>ศูนย์อุปกรณ์<br>DIT</span></div>
+    </section>
+
+    <section class="items-section">
+      <div class="section-meta">
+        <span id="items-count-label">กำลังโหลดข้อมูลอุปกรณ์...</span>
+      </div>
+      <div id="equipment-grid" class="equipment-grid">
+        <!-- Javascript dynamic cards จาก MongoDB Atlas -->
+      </div>
+    </section>
+
+    <section id="my-requests-view" class="my-requests-view is-hidden">
+      <div class="section-heading">
+        <div><span class="eyebrow">YOUR ACTIVITY</span><h2>คำขอยืมของฉัน</h2></div>
+        <button id="back-to-catalog-btn" class="text-action"><i class="fa-solid fa-arrow-left"></i> กลับไปเลือกอุปกรณ์</button>
+      </div>
+      <div id="my-requests-list" class="my-requests-list"></div>
+    </section>
+  </main>
+
+  <!-- Cart Sidebar Drawer -->
+  <div id="cart-overlay" class="cart-overlay"></div>
+  <aside id="cart-sidebar" class="cart-sidebar">
+    <div class="cart-header">
+      <h3><i class="fa-solid fa-basket-shopping"></i> ตะกร้ารายการยืม</h3>
+      <button id="close-cart-btn" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div id="cart-items-container" class="cart-body"></div>
+
+    <div class="cart-footer">
+      <form id="borrow-form">
+        
+        <!-- ช่องกรอกชื่อโปรเจกต์ / วิชา (ตรงกับ MongoDB Schema) -->
+        <div class="form-group">
+          <label for="project-name"><i class="fa-solid fa-diagram-project"></i> ชื่อโปรเจกต์ / วิชา:</label>
+          <input type="text" id="project-name" placeholder="เช่น DIT204 IoT Project" required>
+        </div>
+
+        <div class="form-group">
+          <label for="borrow-date"><i class="fa-regular fa-calendar-check"></i> วันที่ยืม:</label>
+          <input type="date" id="borrow-date" required>
+        </div>
+        <div class="form-group">
+          <label for="return-date"><i class="fa-regular fa-calendar-xmark"></i> กำหนดวันคืน:</label>
+          <input type="date" id="return-date" required>
+        </div>
+        <div class="form-group">
+          <label for="borrow-purpose"><i class="fa-regular fa-note-sticky"></i> วัตถุประสงค์การใช้งาน:</label>
+          <textarea id="borrow-purpose" rows="2" placeholder="ระบุเหตุผล หรือโครงงานที่ใช้อุปกรณ์..." required></textarea>
+        </div>
+        <button type="submit" id="submit-request-btn" class="submit-btn" disabled>
+          <i class="fa-solid fa-paper-plane"></i> ส่งคำขอยืมอุปกรณ์
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- Modal เข้าสู่ระบบ & สมัครสมาชิก -->
+  <div id="auth-modal" class="auth-modal-overlay">
+    <div class="auth-modal-card">
+      <button id="close-auth-modal" class="auth-close-btn">&times;</button>
+      <div class="auth-intro">
+        <span class="eyebrow">DIT EQUIPMENT PORTAL</span>
+        <h2>ยินดีต้อนรับ</h2>
+        <p>เข้าสู่ระบบเพื่อจัดการคำขอยืมของคุณ</p>
+      </div>
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" data-tab="login">เข้าสู่ระบบ</button>
+        <button class="auth-tab-btn" data-tab="register">สมัครสมาชิก</button>
+      </div>
+
+      <form id="login-form" class="auth-form active">
+        <div class="auth-form-group">
+          <label for="login-phone"><i class="fa-solid fa-phone"></i> เบอร์โทรศัพท์</label>
+          <input type="tel" id="login-phone" inputmode="tel" autocomplete="tel" placeholder="เช่น 0891234567" required>
+        </div>
+        <div class="auth-form-group">
+          <label for="login-password"><i class="fa-solid fa-lock"></i> รหัสผ่าน</label>
+          <input type="password" id="login-password" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="auth-submit-btn">
+          <i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ
+        </button>
+        <a class="admin-login-link" href="admin.html"><i class="fa-solid fa-shield-halved"></i> เข้าสู่ระบบผู้ดูแล</a>
+        <div id="google-signin-area" class="google-login-wrap">
+          <div class="auth-divider"><span>หรือเข้าสู่ระบบด้วย</span></div>
+          <div id="google-signin-button"></div>
+          <p id="google-config-message" class="google-config-message"></p>
+        </div>
+      </form>
+
+      <form id="register-form" class="auth-form">
+        <div class="auth-form-group">
+          <label for="reg-fullname"><i class="fa-solid fa-user"></i> ชื่อ-นามสกุล</label>
+          <input type="text" id="reg-fullname" autocomplete="name" maxlength="120" placeholder="กรอกชื่อ-นามสกุล" required>
+        </div>
+        <div class="auth-form-group">
+          <label for="reg-phone"><i class="fa-solid fa-phone"></i> เบอร์โทรศัพท์ติดต่อ</label>
+          <input type="tel" id="reg-phone" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="เช่น 0891234567" required>
+        </div>
+        <div class="auth-form-group">
+          <label for="reg-password"><i class="fa-solid fa-lock"></i> รหัสผ่าน</label>
+          <input type="password" id="reg-password" autocomplete="new-password" placeholder="อย่างน้อย 8 ตัวอักษร" minlength="8" required>
+        </div>
+        <div class="auth-form-group">
+          <label for="reg-confirm-password"><i class="fa-solid fa-lock"></i> ยืนยันรหัสผ่าน</label>
+          <input type="password" id="reg-confirm-password" autocomplete="new-password" placeholder="ใส่รหัสผ่านอีกครั้ง" minlength="8" required>
+        </div>
+        <button type="submit" class="auth-submit-btn">
+          <i class="fa-solid fa-user-plus"></i> สร้างบัญชีและเข้าสู่ระบบ
+        </button>
+      </form>
+
+      <form id="google-profile-form" class="auth-form google-profile-form">
+        <div class="google-profile-heading"><i class="fa-brands fa-google"></i><div><strong>ยืนยันข้อมูลนักศึกษา</strong><span>กรอกชื่อและรหัสนักศึกษาก่อนเริ่มใช้งาน</span></div></div>
+        <div class="auth-form-group">
+          <label for="google-profile-email">อีเมล Google</label>
+          <input type="email" id="google-profile-email" readonly>
+        </div>
+        <div class="auth-form-group">
+          <label for="google-profile-name">ชื่อ-นามสกุล</label>
+          <input type="text" id="google-profile-name" autocomplete="name" maxlength="120" required placeholder="กรอกชื่อ-นามสกุล">
+        </div>
+        <div class="auth-form-group">
+          <label for="google-profile-id">รหัสนักศึกษา</label>
+          <input type="text" id="google-profile-id" autocomplete="off" maxlength="40" required placeholder="กรอกรหัสนักศึกษา">
+        </div>
+        <button type="submit" class="auth-submit-btn"><i class="fa-solid fa-user-check"></i>ยืนยันและเข้าสู่ระบบ</button>
+        <button type="button" id="cancel-google-profile" class="google-cancel-btn">ยกเลิก</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">
+    <i class="fa-solid fa-circle-check"></i>
+    <span id="toast-message">ทำรายการสำเร็จ</span>
+  </div>
+
+  <!-- Modal ส่งคำขอสำเร็จ -->
+  <div id="success-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-icon"><i class="fa-solid fa-circle-check"></i></div>
+      <h2>ส่งคำขอยืมสำเร็จ!</h2>
+      <p>ระบบได้รับการยื่นคำขอของคุณแล้ว เจ้าหน้าที่จะทำการตรวจสอบและอนุมัติโดยเร็วที่สุด</p>
+      <div class="modal-info-box">
+        <p><strong>หมายเลขคำขอ:</strong> <span id="modal-req-id">REQ-001</span></p>
+        <p><strong>จำนวนรายการ:</strong> <span id="modal-req-count">0</span> รายการ</p>
+      </div>
+      <button id="close-modal-btn" class="btn-primary">ตกลง / กลับสู่หน้าหลัก</button>
+    </div>
+  </div>
+
+  <!-- โหลดไลบรารี Socket.io Client ก่อนหน้า script.js -->
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="config.js"></script>
+  <script src="store.js"></script>
+</body>
+</html>

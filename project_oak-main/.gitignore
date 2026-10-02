@@ -1,0 +1,16 @@
+# ข้อมูลลับและ Environment Variables (ห้ามขึ้น Git เด็ดขาด)
+.env
+.env.local
+.env.*.local
+
+# โฟลเดอร์ Dependencies ขนาดใหญ่
+node_modules/
+
+# ไฟล์ Log ต่างๆ
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ไฟล์ขยะของระบบปฏิบัติการ
+.DS_Store
+Thumbs.db

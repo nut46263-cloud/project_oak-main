@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#82182b">
+  <title>คลังกลาง | Admin Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="admin.css">
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="config.js"></script>
+  <script src="admin.js" defer></script>
+</head>
+<body class="admin-page">
+  <div id="toast-container" class="toast-stack" aria-live="polite"></div>
+  <header class="admin-topbar">
+    <a class="admin-brand" href="index.html"><span class="brand-emblem"><i class="fa-solid fa-boxes-stacked"></i></span><span><strong>คลังกลาง</strong><small>ระบบจัดการยืม-คืนอุปกรณ์</small></span></a>
+    <div class="topbar-actions">
+      <span id="socket-status" class="connection-state"><i></i><span>กำลังเชื่อมต่อ</span></span>
+      <a class="topbar-link" href="index.html"><i class="fa-solid fa-arrow-up-right-from-square"></i><span>หน้าผู้ใช้</span></a>
+      <span id="admin-name" class="admin-name"></span>
+      <button id="logout-admin" class="icon-button" title="ออกจากระบบ" aria-label="ออกจากระบบ"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
+    </div>
+  </header>
+
+  <div id="admin-app" class="admin-layout is-hidden">
+    <aside class="admin-sidebar">
+      <span class="sidebar-label">WORKSPACE</span>
+      <button class="side-link active" data-view="overview"><i class="fa-solid fa-chart-pie"></i>ภาพรวม</button>
+      <button class="side-link" data-view="inventory"><i class="fa-solid fa-boxes-stacked"></i>คลังสินค้า<span id="nav-item-count" class="side-count">0</span></button>
+      <button class="side-link" data-view="loans"><i class="fa-solid fa-arrow-right-arrow-left"></i>รายการยืม<span id="nav-loan-count" class="side-count alert-count">0</span></button>
+      <div class="sidebar-bottom"><span class="live-dot"></span><span>ข้อมูลอัปเดตแบบเรียลไทม์</span></div>
+    </aside>
+
+    <main class="admin-main">
+      <section class="admin-view active" id="view-overview">
+        <div class="page-heading"><div><span class="eyebrow">OPERATIONS / OVERVIEW</span><h1>ภาพรวมคลังอุปกรณ์</h1><p>ติดตามสต็อกและรายการยืมที่ต้องดำเนินการ</p></div><button id="refresh-all" class="button button-light"><i class="fa-solid fa-rotate"></i>อัปเดตข้อมูล</button></div>
+        <div class="metric-grid">
+          <article class="metric-card"><span class="metric-icon red-icon"><i class="fa-solid fa-boxes-stacked"></i></span><div><small>รายการสินค้า</small><strong id="metric-products">0</strong></div><span class="metric-note">ชนิดในคลัง</span></article>
+          <article class="metric-card"><span class="metric-icon green-icon"><i class="fa-solid fa-box-open"></i></span><div><small>พร้อมให้ยืม</small><strong id="metric-available">0</strong></div><span class="metric-note">ชิ้น</span></article>
+          <article class="metric-card"><span class="metric-icon amber-icon"><i class="fa-regular fa-clock"></i></span><div><small>รออนุมัติ</small><strong id="metric-pending">0</strong></div><span class="metric-note">คำขอ</span></article>
+          <article class="metric-card"><span class="metric-icon rose-icon"><i class="fa-solid fa-arrow-right-arrow-left"></i></span><div><small>ยังคืนไม่ครบ</small><strong id="metric-outstanding">0</strong></div><span class="metric-note">รายการยืม</span></article>
+        </div>
+        <div class="overview-grid">
+          <section class="panel low-stock-panel"><div class="panel-heading"><div><h2>สต็อกใกล้หมด</h2><p>สินค้าเหลือไม่เกิน 3 ชิ้น</p></div><button class="text-button" data-go-view="inventory">ดูคลัง <i class="fa-solid fa-arrow-right"></i></button></div><div id="low-stock-list" class="low-stock-list"></div></section>
+          <section class="panel recent-panel"><div class="panel-heading"><div><h2>รายการล่าสุด</h2><p>คำขอยืมที่เพิ่งเข้าระบบ</p></div><button class="text-button" data-go-view="loans">ดูทั้งหมด <i class="fa-solid fa-arrow-right"></i></button></div><div id="recent-loans" class="recent-loans"></div></section>
+        </div>
+      </section>
+
+      <section class="admin-view" id="view-inventory">
+        <div class="page-heading"><div><span class="eyebrow">INVENTORY / CATALOG</span><h1>จัดการสินค้า</h1><p>เพิ่มรายการใหม่ แก้ข้อมูล และปรับจำนวนคงคลัง</p></div><button id="add-item-button" class="button button-primary"><i class="fa-solid fa-plus"></i>เพิ่มสินค้า</button></div>
+        <section class="panel table-panel">
+          <div class="table-toolbar"><label class="search-field"><i class="fa-solid fa-magnifying-glass"></i><input id="inventory-search" type="search" placeholder="ค้นหาชื่อหรือรหัสสินค้า"></label><select id="inventory-category" class="filter-select"><option value="all">ทุกหมวดหมู่</option><option value="durable">ครุภัณฑ์</option><option value="consumable">วัสดุสิ้นเปลือง</option></select></div>
+          <div class="table-scroll"><table><thead><tr><th>สินค้า</th><th>หมวดหมู่</th><th>จำนวนรวม</th><th>พร้อมยืม</th><th>สถานะคลัง</th><th><span class="sr-only">จัดการ</span></th></tr></thead><tbody id="inventory-body"></tbody></table></div>
+        </section>
+      </section>
+
+      <section class="admin-view" id="view-loans">
+        <div class="page-heading"><div><span class="eyebrow">LOANS / RETURNS</span><h1>รายการยืมและคืน</h1><p>อนุมัติคำขอ แก้รายละเอียด และบันทึกการรับคืนทีละส่วน</p></div><button id="refresh-loans" class="button button-light"><i class="fa-solid fa-rotate"></i>โหลดใหม่</button></div>
+        <section class="panel table-panel">
+          <div class="table-toolbar"><label class="search-field"><i class="fa-solid fa-magnifying-glass"></i><input id="loan-search" type="search" placeholder="ค้นหาผู้ยืมหรือโครงการ"></label><select id="loan-status" class="filter-select"><option value="all">ทุกสถานะ</option><option value="pending">รออนุมัติ</option><option value="approved">กำลังยืม / คืนไม่ครบ</option><option value="returned">คืนครบแล้ว</option><option value="rejected">ไม่อนุมัติ</option></select><select id="loan-role" class="filter-select"><option value="all">ผู้ใช้ทุกประเภท</option><option value="user">ผู้ใช้ทั่วไป</option><option value="student">นักศึกษา</option><option value="teacher">อาจารย์</option></select></div>
+          <div class="table-scroll"><table><thead><tr><th>ผู้ยืม</th><th>โครงการ / วัตถุประสงค์</th><th>อุปกรณ์และยอดค้าง</th><th>กำหนดคืน</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody id="loans-body"></tbody></table></div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="item-dialog" class="admin-dialog"><form id="item-form"><div class="dialog-heading"><div><span class="eyebrow">INVENTORY ITEM</span><h2 id="item-dialog-title">เพิ่มสินค้า</h2></div><button type="button" class="dialog-close" data-close-dialog="item-dialog" aria-label="ปิด"><i class="fa-solid fa-xmark"></i></button></div><input id="item-id" type="hidden"><div class="form-grid"><label>รหัสสินค้า<input id="item-code" required maxlength="40" placeholder="เช่น EQ-004"></label><label>ชื่อสินค้า<input id="item-name" required maxlength="120" placeholder="ชื่ออุปกรณ์"></label><label>หมวดหมู่<select id="item-category" required><option value="durable">ครุภัณฑ์</option><option value="consumable">วัสดุสิ้นเปลือง</option></select></label><label>จำนวนรวมในคลัง<input id="item-quantity" required type="number" min="0" step="1" value="1"></label><label class="full-field">ลิงก์รูปภาพ<input id="item-image" type="url" placeholder="https://..."></label><label class="full-field">รายละเอียด<textarea id="item-description" rows="3" maxlength="500" placeholder="รายละเอียดหรือวิธีใช้งาน"></textarea></label></div><p class="dialog-hint">เมื่อปรับจำนวนรวม ระบบจะคำนวณจำนวนพร้อมยืมโดยคงยอดที่ยืม ชำรุด และสูญหายไว้</p><div class="dialog-actions"><button type="button" class="button button-light" data-close-dialog="item-dialog">ยกเลิก</button><button class="button button-primary" type="submit"><i class="fa-solid fa-floppy-disk"></i>บันทึกสินค้า</button></div></form></dialog>
+
+  <dialog id="loan-dialog" class="admin-dialog loan-dialog"><form id="loan-form"><div class="dialog-heading"><div><span class="eyebrow">LOAN RECORD</span><h2>แก้ไขรายการยืม</h2></div><button type="button" class="dialog-close" data-close-dialog="loan-dialog" aria-label="ปิด"><i class="fa-solid fa-xmark"></i></button></div><input id="loan-id" type="hidden"><div class="form-grid"><label>ชื่อโครงการ<input id="loan-project" required></label><label>ชื่อกลุ่ม<input id="loan-group"></label><label>กำหนดคืน<input id="loan-due-date" type="date" required></label><label class="full-field">วัตถุประสงค์<textarea id="loan-purpose" rows="2" required></textarea></label></div><div id="return-editor" class="return-editor"></div><div class="dialog-actions"><button type="button" class="button button-light" data-close-dialog="loan-dialog">ยกเลิก</button><button class="button button-primary" type="submit"><i class="fa-solid fa-floppy-disk"></i>บันทึกการแก้ไข</button></div></form></dialog>
+
+  <section id="admin-login" class="login-gate"><form id="admin-login-form" class="login-card"><div class="login-emblem"><i class="fa-solid fa-lock"></i></div><span class="eyebrow">ADMIN ACCESS</span><h1>เข้าสู่ระบบผู้ดูแล</h1><p>ใช้บัญชีผู้ดูแลระบบเพื่อจัดการคลังและรายการยืม</p><label>รหัสผู้ใช้<input id="admin-identifier" autocomplete="username" required placeholder="ADMIN001"></label><label>รหัสผ่าน<input id="admin-password" type="password" autocomplete="current-password" required></label><button class="button button-primary" type="submit"><i class="fa-solid fa-arrow-right-to-bracket"></i>เข้าสู่ระบบ</button><a href="index.html">กลับหน้ารายการอุปกรณ์</a></form></section>
+</body>
+</html>
